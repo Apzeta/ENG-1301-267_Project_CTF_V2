@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Terminal CTF</title>
+<style>
+body {
+  background: #000;
+  color: #fff;
+  font-family: "Courier New", Courier, monospace;
+  margin: 0;
+  padding: 20px;
+}
+
+#terminal {
+white-space: pre-wrap;
+line-height: 1.4;
+}
+
+.line {
+  margin: 0;
+}
+
+.input-line {
+  display: flex;
+  align-items: center;
+}
+
+.prompt {
+  margin-right: 6px;
+}
+
+#cmd {
+background: transparent;
+border: none;
+color: #fff;
+font-family: inherit;
+font-size: inherit;
+outline: none;
+flex: 1;
+}
+
+a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+#player-bar {
+margin-top: 20px;
+border-top: 1px solid #333;
+padding-top: 10px;
+}
+
+#player-bar .line {
+margin-bottom: 6px;
+}
+
+#player-controls button {
+background: #000;
+color: #fff;
+border: 1px solid #fff;
+font-family: inherit;
+margin-right: 6px;
+cursor: pointer;
+}
+
+#player-controls button:hover {
+background: #111;
+}
+
+#now-playing {
+margin-top: 6px;
+font-style: italic;
+}
+</style>
+</head>
+<body>
+<div id="terminal">
+<div class="line">Terminal CTF – select an option:</div>
+<div class="line"></div>
+<div class="line">1. Questions = ?</div>
+<div class="line">2. Guess Password = $</div>
+<div class="line">3. Table = !</div>
+<div class="line">4. FAQ = *</div>
+<div class="line">5. README = &</div>
+<div class="line"></div>
+<div id="output"></div>
+<div class="input-line">
+<span class="prompt">&gt;</span>
+<input id="cmd" type="text" autocomplete="off" autofocus />
+</div>
+</div>
+
+<div id="player-bar">
+<div class="line">[Mini OST Player]</div>
+<div id="player-controls" class="line">
+<button id="btn-prev">prev</button>
+<button id="btn-play">play</button>
+<button id="btn-pause">pause</button>
+<button id="btn-next">next</button>
+<button id="btn-stop">stop</button>
+</div>
+<div id="now-playing" class="line">Loading tracks...</div>
+<audio id="audio-element"></audio>
+</div>
+
+<script>
+// =========================
+// CONFIG: OST files in the ost/ folder
+// =========================
+const OST_FILES = [
+  "ost/ANewMorning.ogg",
+"ost/Crush.ogg",
+"ost/Crystals.ogg",
+"ost/Daisuke.ogg",
+"ost/DeepCover.ogg",
+"ost/ElectricDreams.ogg",
+"ost/Flatline.ogg",
+"ost/HorseSteppin.ogg",
+"ost/Hotline.ogg",
+"ost/Hydrogen.ogg",
+"ost/InnerAnimal.ogg",
+"ost/ItsSafeNow.ogg",
+"ost/Knock.ogg",
+"ost/Miami2.ogg",
+"ost/Musikk2.ogg",
+"ost/Paris2.ogg",
+"ost/Perturbator.ogg",
+"ost/Release.ogg",
+"ost/SilverLights.ogg",
+"ost/Static.ogg",
+"ost/ToTheTop.ogg",
+"ost/TurfIntro.ogg",
+"ost/TurfMain.ogg"
+];
+
+// =========================
+// Terminal logic
+// =========================
+const output = document.getElementById("output");
+const input = document.getElementById("cmd");
+
+let mode = "menu";
+let musicMode = false;
+
+function printLine(text) {
+  const div = document.createElement("div");
+  div.className = "line";
+  div.textContent = text;
+  output.appendChild(div);
+}
+
+function printHTML(html) {
+  const div = document.createElement("div");
+  div.className = "line";
+  div.innerHTML = html;
+  output.appendChild(div);
+}
+
+function clearInput() {
+  input.value = "";
+}
+
+function focusInput() {
+  input.focus();
+}
+
+function showQuestions() {
+  printLine("Four questions to ponder.");
+  printLine("");
+  printLine("Question number one: Do you like hurting other people ?");
+  printLine("");
+  printLine("Question number two: Who are leaving messages on your answering machine ?");
+  printLine("");
+  printLine("Question number three: Where are you right now ?");
+  printLine("");
+  printLine("And the final question: Why are we having this conversation ?");
+  printLine("");
+}
+
+function showPasswordPrompt() {
+  mode = "password";
+  printLine("Enter a passwd:");
+  printLine("(type 'exit' to go back to the menu)");
+  printLine("");
+}
+
+function showTable() {
+  printLine("This tables will be the key for password");
+  printLine("");
+  printLine("1. SSBXYXMgQm9ybiBpbiB0aGUgVVNB");
+  printLine("");
+  printLine("2. Elpis is ?");
+  printLine("");
+  printLine("3. Farewell, good hunter. May you find your worth in the waking world.");
+  printLine("");
+  printLine("4. If I were not Alexander, I would wish to be");
+  printLine("");
+}
+
+function showFAQ() {
+  printLine("FAQ:");
+  printLine("");
+  printLine("Q1. Why this syle ?");
+  printLine("A1. This simple terminal style being from the first computers");
+  printLine("");
+  printLine("Q2. Why a Capture the flag ?");
+  printLine("A2. Mainly due to CTFs ( Capture of flags ) being fun");
+  printLine("");
+  printLine("Q3. Why make a Website and Essay ?");
+  printLine("A3. Both are need to see full landescape");
+  printLine("");
+}
+
+function showREADME() {
+  printLine("README");
+  printLine("");
+  printLine("This is a terminal-style CTF website.");
+  printLine("Use the options (?, $, !, *, &) to navigate.");
+  printLine("Some passwords unlock hidden files (PDFs / TXT).");
+  printLine("Use 'music' to manage OST playback.");
+  printLine("");
+}
+
+function showMusicHelp() {
+  printLine("Music controls:");
+  printLine("  list        – list available tracks");
+  printLine("  play <n>    – play track number n (1-based)");
+  printLine("  random      – play a random track");
+  printLine("  stop        – stop playback");
+  printLine("  exit        – return to main menu");
+  printLine("");
+}
+
+function showMusicList() {
+  if (OST_FILES.length === 0) {
+    printLine("No tracks configured.");
+    printLine("");
+    return;
+  }
+  printLine("Available tracks:");
+  OST_FILES.forEach((file, i) => {
+    const name = file.replace(/^ost\//, "");
+    printLine(`  ${i + 1}. ${name}`);
+  });
+  printLine("");
+}
+
+function handlePassword(cmd) {
+  if (cmd.toLowerCase() === "exit") {
+    mode = "menu";
+    printLine("Exited password mode. Back to menu.");
+    printLine("");
+    return;
+  }
+  
+  if (cmd === "I Was Born in the USA") {
+    printLine("Access granted: I Was Born in the USA");
+    printHTML('<a href="Part_1.pdf" target="_blank">Open Part_1.pdf</a>');
+    printLine("");
+  } else if (cmd === "Hope") {
+    printLine("Access granted: Hope");
+    printHTML('<a href="0.txt" target="_blank">Open 0.txt</a>');
+    printLine("");
+  } else if (cmd === "Hunter's Dream") {
+    printLine("Access granted: Hunter's Dream");
+    printHTML('<a href="Part_2.pdf" target="_blank">Open Part_2.pdf</a>');
+    printLine("");
+  } else if (cmd === "Diogenes") {
+    printLine("Access granted: Diogenes");
+    printHTML('<a href="Part_3.pdf" target="_blank">Open Part_3.pdf</a>');
+    printLine("");
+  } else {
+    printLine("Access denied. Unknown password.");
+    printLine("(type 'exit' to go back to the menu, or try another passwd)");
+    printLine("");
+  }
+}
+
+function handleMusicCommand(cmd) {
+  const parts = cmd.trim().split(/\s+/);
+  const sub = (parts[0] || "").toLowerCase();
+  
+  if (sub === "exit") {
+    musicMode = false;
+    mode = "menu";
+    printLine("Exited music mode. Back to main menu.");
+    printLine("");
+    return;
+  }
+  
+  if (sub === "list") {
+    showMusicList();
+  } else if (sub === "random") {
+    playRandomTrack();
+  } else if (sub === "stop") {
+    stopTrack();
+    printLine("Playback stopped.");
+    printLine("");
+  } else if (sub === "play") {
+    const n = parseInt(parts[1], 10);
+    if (!n || n < 1 || n > OST_FILES.length) {
+      printLine("Usage: play <track-number>");
+      printLine("Use 'list' to see available tracks.");
+      printLine("");
+    } else {
+      playTrackIndex(n - 1);
+    }
+  } else if (sub === "") {
+    // empty
+  } else {
+    printLine("Unknown music command. Use: list, play <n>, random, stop, exit");
+    printLine("");
+  }
+}
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const cmd = input.value;
+    printLine("> " + cmd);
+    clearInput();
+    
+    if (mode === "menu" && !musicMode) {
+      if (cmd === "?") {
+        showQuestions();
+      } else if (cmd === "$") {
+        showPasswordPrompt();
+      } else if (cmd === "!") {
+        showTable();
+      } else if (cmd === "*") {
+        showFAQ();
+      } else if (cmd === "&") {
+        showREADME();
+      } else if (cmd.toLowerCase() === "music") {
+        musicMode = true;
+        printLine("Music mode enabled.");
+        showMusicHelp();
+      } else if (cmd.trim() === "") {
+        // do nothing
+      } else {
+        printLine("Unknown option. Use ?, $, !, *, or &");
+        printLine("");
+      }
+    } else if (mode === "password") {
+      handlePassword(cmd);
+    } else if (musicMode) {
+      handleMusicCommand(cmd);
+    }
+    
+    focusInput();
+  }
+});
+
+document.addEventListener("click", () => {
+  focusInput();
+});
+
+focusInput();
+
+// =========================
+// Mini player logic
+// =========================
+const audio = document.getElementById("audio-element");
+const nowPlayingEl = document.getElementById("now-playing");
+const btnPrev = document.getElementById("btn-prev");
+const btnPlay = document.getElementById("btn-play");
+const btnPause = document.getElementById("btn-pause");
+const btnNext = document.getElementById("btn-next");
+const btnStop = document.getElementById("btn-stop");
+
+let currentIndex = -1;
+
+function updateNowPlaying() {
+  if (currentIndex < 0 || currentIndex >= OST_FILES.length) {
+    nowPlayingEl.textContent = "No track loaded.";
+    return;
+  }
+  const name = OST_FILES[currentIndex].replace(/^ost\//, "");
+  nowPlayingEl.textContent = "Now playing: " + name;
+}
+
+function playTrackIndex(index) {
+  if (index < 0 || index >= OST_FILES.length) return;
+  currentIndex = index;
+  audio.src = OST_FILES[currentIndex];
+  audio.play().catch(() => {
+    nowPlayingEl.textContent = "Click play to start.";
+  });
+  updateNowPlaying();
+}
+
+function playRandomTrack() {
+  if (OST_FILES.length === 0) {
+    printLine("No tracks configured.");
+    printLine("");
+    return;
+  }
+  const idx = Math.floor(Math.random() * OST_FILES.length);
+  playTrackIndex(idx);
+  printLine("Playing random track...");
+  printLine("");
+}
+
+function stopTrack() {
+  audio.pause();
+  audio.currentTime = 0;
+  audio.src = "";
+  currentIndex = -1;
+  updateNowPlaying();
+}
+
+btnPrev.addEventListener("click", () => {
+  if (OST_FILES.length === 0) return;
+  if (currentIndex <= 0) {
+    currentIndex = OST_FILES.length - 1;
+  } else {
+    currentIndex--;
+  }
+  playTrackIndex(currentIndex);
+});
+
+btnPlay.addEventListener("click", () => {
+  if (currentIndex < 0) {
+    if (OST_FILES.length === 0) return;
+    playTrackIndex(0);
+  } else {
+    audio.play();
+  }
+});
+
+btnPause.addEventListener("click", () => {
+  audio.pause();
+});
+
+btnNext.addEventListener("click", () => {
+  if (OST_FILES.length === 0) return;
+  if (currentIndex >= OST_FILES.length - 1) {
+    currentIndex = 0;
+  } else {
+    currentIndex++;
+  }
+  playTrackIndex(currentIndex);
+});
+
+btnStop.addEventListener("click", () => {
+  stopTrack();
+});
+
+// On page load, play a random track from OST_FILES
+window.addEventListener("load", () => {
+  if (OST_FILES.length > 0) {
+    const idx = Math.floor(Math.random() * OST_FILES.length);
+    playTrackIndex(idx);
+  } else {
+    nowPlayingEl.textContent = "No tracks in OST_FILES.";
+  }
+});
+</script>
+</body>
+</html>
