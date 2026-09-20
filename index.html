@@ -5,16 +5,29 @@
 <title>Terminal CTF</title>
 <style>
 body {
-  background: #000;
+  /* Background image + fallback */
+  background: #000 url("images/desktop-background.png") no-repeat center center fixed;
+  background-size: cover;
   color: #fff;
   font-family: "Courier New", Courier, monospace;
   margin: 0;
   padding: 20px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Slight overlay to keep text readable on busy backgrounds */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: -1;
 }
 
 #terminal {
-white-space: pre-wrap;
-line-height: 1.4;
+  white-space: pre-wrap;
+  line-height: 1.4;
 }
 
 .line {
@@ -31,13 +44,13 @@ line-height: 1.4;
 }
 
 #cmd {
-background: transparent;
-border: none;
-color: #fff;
-font-family: inherit;
-font-size: inherit;
-outline: none;
-flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  flex: 1;
 }
 
 a {
@@ -46,31 +59,31 @@ a {
 }
 
 #player-bar {
-margin-top: 20px;
-border-top: 1px solid #333;
-padding-top: 10px;
+  margin-top: 20px;
+  border-top: 1px solid #333;
+  padding-top: 10px;
 }
 
 #player-bar .line {
-margin-bottom: 6px;
+  margin-bottom: 6px;
 }
 
 #player-controls button {
-background: #000;
-color: #fff;
-border: 1px solid #fff;
-font-family: inherit;
-margin-right: 6px;
-cursor: pointer;
+  background: #000;
+  color: #fff;
+  border: 1px solid #fff;
+  font-family: inherit;
+  margin-right: 6px;
+  cursor: pointer;
 }
 
 #player-controls button:hover {
-background: #111;
+  background: #111;
 }
 
 #now-playing {
-margin-top: 6px;
-font-style: italic;
+  margin-top: 6px;
+  font-style: italic;
 }
 </style>
 </head>
@@ -110,28 +123,28 @@ font-style: italic;
 // =========================
 const OST_FILES = [
   "ost/ANewMorning.ogg",
-"ost/Crush.ogg",
-"ost/Crystals.ogg",
-"ost/Daisuke.ogg",
-"ost/DeepCover.ogg",
-"ost/ElectricDreams.ogg",
-"ost/Flatline.ogg",
-"ost/HorseSteppin.ogg",
-"ost/Hotline.ogg",
-"ost/Hydrogen.ogg",
-"ost/InnerAnimal.ogg",
-"ost/ItsSafeNow.ogg",
-"ost/Knock.ogg",
-"ost/Miami2.ogg",
-"ost/Musikk2.ogg",
-"ost/Paris2.ogg",
-"ost/Perturbator.ogg",
-"ost/Release.ogg",
-"ost/SilverLights.ogg",
-"ost/Static.ogg",
-"ost/ToTheTop.ogg",
-"ost/TurfIntro.ogg",
-"ost/TurfMain.ogg"
+  "ost/Crush.ogg",
+  "ost/Crystals.ogg",
+  "ost/Daisuke.ogg",
+  "ost/DeepCover.ogg",
+  "ost/ElectricDreams.ogg",
+  "ost/Flatline.ogg",
+  "ost/HorseSteppin.ogg",
+  "ost/Hotline.ogg",
+  "ost/Hydrogen.ogg",
+  "ost/InnerAnimal.ogg",
+  "ost/ItsSafeNow.ogg",
+  "ost/Knock.ogg",
+  "ost/Miami2.ogg",
+  "ost/Musikk2.ogg",
+  "ost/Paris2.ogg",
+  "ost/Perturbator.ogg",
+  "ost/Release.ogg",
+  "ost/SilverLights.ogg",
+  "ost/Static.ogg",
+  "ost/ToTheTop.ogg",
+  "ost/TurfIntro.ogg",
+  "ost/TurfMain.ogg"
 ];
 
 // =========================
